@@ -1,7 +1,7 @@
 <?php
 session_start();
 include('includes/db.php');
-include ('includes/navbar.php');
+include('includes/navbar.php');
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -16,6 +16,12 @@ $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $user = $stmt->get_result()->fetch_assoc();
 
+$query = "SELECT * FROM user_index_weights WHERE user_id = ?";
+$stmt = $conn->prepare($query);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$index_weights = $stmt->get_result()->fetch_assoc();
+
 $query = "SELECT m.*, um.user_id FROM meetings m
           JOIN user_meetings um ON m.ID = um.meeting_id
           WHERE um.user_id = ?";
@@ -23,6 +29,40 @@ $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $meetings = $stmt->get_result();
+
+if (!$index_weights) {
+    $query = "INSERT INTO user_index_weights (user_id, author_weight, date_weight, popularity_weight, subject_weight) VALUES (?, 5, 5, 5, 5)";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $index_weights = [
+        'author_weight' => 0,
+        'date_weight' => 0,
+        'popularity_weight' => 0,
+        'subject_weight' => 0
+    ];
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $author_weight = intval($_POST['author_weight']);
+    $date_weight = intval($_POST['date_weight']);
+    $popularity_weight = intval($_POST['popularity_weight']);
+    $subject_weight = intval($_POST['subject_weight']);
+
+    $query = "UPDATE user_index_weights SET author_weight = ?, date_weight = ?, popularity_weight = ?, subject_weight = ? WHERE user_id = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("iiiii", $author_weight, $date_weight, $popularity_weight, $subject_weight, $user_id);
+    $stmt->execute();
+
+    $index_weights = [
+        'author_weight' => $author_weight,
+        'date_weight' => $date_weight,
+        'popularity_weight' => $popularity_weight,
+        'subject_weight' => $subject_weight
+    ];
+
+    echo "<script>alert('Weights updated successfully!');</script>";
+}
 ?>
 
 <!DOCTYPE html>
@@ -44,6 +84,27 @@ $meetings = $stmt->get_result();
             <p>Your role: <strong><?php echo htmlspecialchars($user['role']); ?></strong></p>
         </div>
     </div>
+
+    <h2 class="mt-4">Set Weights for Meeting Rankings:</h2>
+    <form method="POST">
+        <div class="form-group">
+            <label for="author_weight">Author Weight (0-10):</label>
+            <input type="number" class="form-control" id="author_weight" name="author_weight" min="0" max="10" value="<?php echo htmlspecialchars($index_weights['author_weight']); ?>" required>
+        </div>
+        <div class="form-group">
+            <label for="date_weight">Date Weight (0-10):</label>
+            <input type="number" class="form-control" id="date_weight" name="date_weight" min="0" max="10" value="<?php echo htmlspecialchars($index_weights['date_weight']); ?>" required>
+        </div>
+        <div class="form-group">
+            <label for="popularity_weight">Popularity Weight (0-10):</label>
+            <input type="number" class="form-control" id="popularity_weight" name="popularity_weight" min="0" max="10" value="<?php echo htmlspecialchars($index_weights['popularity_weight']); ?>" required>
+        </div>
+        <div class="form-group">
+            <label for="subject_weight">Subject Weight (0-10):</label>
+            <input type="number" class="form-control" id="subject_weight" name="subject_weight" min="0" max="10" value="<?php echo htmlspecialchars($index_weights['subject_weight']); ?>" required>
+        </div>
+        <button type="submit" class="btn btn-success">Save Weights</button>
+    </form>
 
     <h2 class="mt-4">Your Meetings:</h2>
     <?php if ($meetings->num_rows > 0): ?>

@@ -9,7 +9,6 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-<!--    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.1/umd/popper.min.js"></script>-->
 
 </head>
 <body class="bg-light">
@@ -48,6 +47,16 @@
                         <div class="dropdown-menu" aria-labelledby="meetingsDropdown">
                             <a class="dropdown-item" href="add_meeting.php">Add Meeting</a>
                             <a class="dropdown-item" href="get_all_meetings.php">All Meetings</a>
+                        </div>
+                    </li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="subjectsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Subjects Management
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="subjectsDropdown">
+                            <a class="dropdown-item" href="add_subject.php">Add Subject</a>
+                            <a class="dropdown-item" href="get_all_subjects.php">All Subjects</a>
                         </div>
                     </li>
 
@@ -242,7 +251,3 @@
 </body>
 </html>
 
-
-<!--<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>-->
-<!--<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>-->
-<!--<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>-->
