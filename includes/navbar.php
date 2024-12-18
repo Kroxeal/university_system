@@ -22,7 +22,7 @@
     <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav">
             <li class="nav-item">
-                <a class="nav-link" href="#">Schedule</a>
+                <a class="nav-link" href="analytics.php">Analytics</a>
             </li>
 
             <?php if (isset($_SESSION['user_id'])): ?>

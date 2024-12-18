@@ -30,6 +30,16 @@ $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $meetings = $stmt->get_result();
 
+$query = "SELECT sg.grade, sg.graded_by, m.title AS meeting_title, u.username AS graded_by_name 
+          FROM student_grades sg
+          JOIN meetings m ON sg.meeting_id = m.ID
+          JOIN users u ON sg.graded_by = u.ID
+          WHERE sg.user_id = ?";
+$stmt = $conn->prepare($query);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$grades = $stmt->get_result();
+
 if (!$index_weights) {
     $query = "INSERT INTO user_index_weights (user_id, author_weight, date_weight, popularity_weight, subject_weight) VALUES (?, 5, 5, 5, 5)";
     $stmt = $conn->prepare($query);
@@ -130,6 +140,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </table>
     <?php else: ?>
         <p>No meetings found.</p>
+    <?php endif; ?>
+
+    <h2 class="mt-4">Your Grades:</h2>
+    <?php if ($grades->num_rows > 0): ?>
+        <table class="table table-bordered">
+            <thead>
+            <tr>
+                <th>Meeting</th>
+                <th>Grade</th>
+                <th>Graded By</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php while ($grade = $grades->fetch_assoc()): ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($grade['meeting_title']); ?></td>
+                    <td><?php echo htmlspecialchars($grade['grade']); ?></td>
+                    <td><?php echo htmlspecialchars($grade['graded_by_name']); ?></td>
+                </tr>
+            <?php endwhile; ?>
+            </tbody>
+        </table>
+    <?php else: ?>
+        <p>No grades found.</p>
     <?php endif; ?>
 </div>
 
