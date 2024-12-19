@@ -8,19 +8,15 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// Общее количество студентов
 $query = "SELECT COUNT(*) AS total_students FROM users WHERE role = 'student'";
 $total_students = $conn->query($query)->fetch_assoc()['total_students'];
 
-// Средний балл всех студентов
 $query = "SELECT AVG(grade) AS avg_grade FROM student_grades";
 $avg_grade = $conn->query($query)->fetch_assoc()['avg_grade'];
 
-// Количество встреч
 $query = "SELECT COUNT(*) AS total_meetings FROM meetings";
 $total_meetings = $conn->query($query)->fetch_assoc()['total_meetings'];
 
-// Популярность встреч (топ-5)
 $query = "SELECT m.title, COUNT(um.user_id) AS attendees
           FROM meetings m
           JOIN user_meetings um ON m.ID = um.meeting_id
@@ -29,7 +25,6 @@ $query = "SELECT m.title, COUNT(um.user_id) AS attendees
           LIMIT 5";
 $popular_meetings = $conn->query($query);
 
-// Данные для графика успеваемости
 $query = "SELECT s.name, AVG(g.grade) AS avg_grade
           FROM users s
           JOIN student_grades g ON s.ID = g.user_id
