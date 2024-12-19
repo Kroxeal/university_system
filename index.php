@@ -13,6 +13,7 @@ include 'includes/navbar.php';
 <body>
 <div class="container">
     <h1>Welcome to our university system</h1>
+    <img src="static/mob-hero.jpg" alt="University Image" class="img-fluid">
 </div>
 </body>
 </html>

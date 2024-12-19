@@ -21,13 +21,13 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav">
-            <li class="nav-item">
-                <a class="nav-link" href="analytics.php">Analytics</a>
-            </li>
+
 
             <?php if (isset($_SESSION['user_id'])): ?>
                 <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
-
+                    <li class="nav-item">
+                        <a class="nav-link" href="analytics.php">Analytics</a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="manage_users.php">Manage Users</a>
                     </li>
@@ -62,6 +62,9 @@
 
                 <?php elseif (isset($_SESSION['role']) && $_SESSION['role'] === 'teacher'): ?>
                     <li class="nav-item">
+                        <a class="nav-link" href="analytics.php">Analytics</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="add_grades.php">Add Marks</a>
                     </li>
                     <li class="nav-item">
@@ -69,8 +72,11 @@
                     </li>
                 <?php elseif (isset($_SESSION['role']) && $_SESSION['role'] === 'student'): ?>
                     <li class="nav-item">
-                        <a class="nav-link" href="view_grades.php">My Marks</a>
+                        <a class="nav-link" href="analytics.php">Analytics</a>
                     </li>
+<!--                    <li class="nav-item">-->
+<!--                        <a class="nav-link" href="view_grades.php">My Marks</a>-->
+<!--                    </li>-->
                     <li class="nav-item">
                         <a class="nav-link" href="get_all_meetings.php">All Meetings</a>
                     </li>
