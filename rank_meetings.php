@@ -10,12 +10,14 @@ function rank_meetings($meetings, $user_id, $conn) {
 
     if (!$weights) {
         $weights = [
-            'author_weight' => 2,
-            'date_weight' => 3,
-            'popularity_weight' => 2,
-            'subject_weight' => 3
+            'author_weight' => 0,
+            'date_weight' => 0,
+            'popularity_weight' => 0,
+            'subject_weight' => 0
         ];
     }
+
+    $subject_ids = get_user_subject_ids($user_id, $conn);
 
     $ranked_meetings = [];
 
@@ -25,6 +27,8 @@ function rank_meetings($meetings, $user_id, $conn) {
         $popularity_score = get_popularity_score($meeting['ID'], $conn);
         $subject_score = get_subject_score($meeting['ID'], $user_id, $conn);
 
+        $is_subject_relevant = in_array($meeting['subject_id'], $subject_ids) ? 1 : 0;
+
         $total_score = ($author_score * $weights['author_weight']) +
             ($date_score * $weights['date_weight']) +
             ($popularity_score * $weights['popularity_weight']) +
@@ -32,23 +36,45 @@ function rank_meetings($meetings, $user_id, $conn) {
 
         $ranked_meetings[] = [
             'meeting' => $meeting,
-            'total_score' => $total_score
+            'total_score' => $total_score,
+            'is_subject_relevant' => $is_subject_relevant
         ];
     }
 
     usort($ranked_meetings, function ($a, $b) {
+        // Сначала сортируем по важности предмета
+        if ($a['is_subject_relevant'] != $b['is_subject_relevant']) {
+            return $b['is_subject_relevant'] - $a['is_subject_relevant'];
+        }
+        // Если важность предмета одинаковая, сортируем по общему баллу
         return $b['total_score'] - $a['total_score'];
     });
 
     return $ranked_meetings;
 }
 
-function get_author_score($meeting_id, $user_id, $conn) {
+function get_user_subject_ids($user_id, $conn) {
     $stmt = $conn->prepare('
-        SELECT creator_id
-        FROM meetings
-        WHERE ID = ?
-    ');
+        SELECT DISTINCT ms.subject_id
+        FROM user_meetings um
+        JOIN meetings m ON um.meeting_id = m.ID
+        JOIN meeting_subjects ms ON m.ID = ms.meeting_id
+        WHERE um.user_id = ?');
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $subject_ids = [];
+    while ($row = $result->fetch_assoc()) {
+        $subject_ids[] = $row['subject_id'];
+    }
+    $stmt->close();
+
+    return $subject_ids;
+}
+
+function get_author_score($meeting_id, $user_id, $conn) {
+    $stmt = $conn->prepare('SELECT creator_id FROM meetings WHERE ID = ?');
     $stmt->bind_param('i', $meeting_id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -59,15 +85,13 @@ function get_author_score($meeting_id, $user_id, $conn) {
         SELECT COUNT(*) AS course_count
         FROM user_meetings um
         JOIN meetings m ON um.meeting_id = m.ID
-        WHERE m.creator_id = ? AND um.user_id = ?
-    ');
+        WHERE m.creator_id = ? AND um.user_id = ?');
     $stmt->bind_param('ii', $author_id, $user_id);
     $stmt->execute();
     $result = $stmt->get_result();
     $row = $result->fetch_assoc();
 
-    $author_score = min($row['course_count'], 5); // Ограничиваем балл (например, 5)
-
+    $author_score = min($row['course_count'], 5); // Ограничиваем максимальный баллом 5
     $stmt->close();
     return $author_score;
 }
@@ -77,7 +101,6 @@ function get_date_score($start_time) {
     $meeting_time = strtotime($start_time);
     $time_difference = $meeting_time - $current_time;
 
-    // Если встреча в прошлом, то балл равен 0
     if ($time_difference < 0) {
         return 0;
     }
@@ -108,26 +131,33 @@ function get_popularity_score($meeting_id, $conn) {
 }
 
 function get_subject_score($meeting_id, $user_id, $conn) {
-    $stmt = $conn->prepare('
-        SELECT s.title
-        FROM meetings m
-        JOIN meeting_subjects ms ON m.ID = ms.meeting_id
-        JOIN subjects s ON ms.subject_id = s.ID
-        LEFT JOIN user_meetings um ON m.ID = um.meeting_id
-        WHERE m.ID = ? AND um.user_id = ?
-    ');
-    $stmt->bind_param('ii', $meeting_id, $user_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    $subject_ids = get_user_subject_ids($user_id, $conn);
 
-    $subject_score = 0;
-
-    while ($row = $result->fetch_assoc()) {
-        $subject_score++;
+    if (empty($subject_ids)) {
+        return 0;
     }
 
+    $stmt = $conn->prepare('
+        SELECT ms.subject_id
+        FROM meeting_subjects ms
+        JOIN meetings m ON ms.meeting_id = m.ID
+        WHERE m.ID = ?');
+    $stmt->bind_param('i', $meeting_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $meeting_subjects = [];
+    while ($row = $result->fetch_assoc()) {
+        $meeting_subjects[] = $row['subject_id'];
+    }
     $stmt->close();
-    return $subject_score;
+
+    foreach ($meeting_subjects as $subject_id) {
+        if (in_array($subject_id, $subject_ids)) {
+            return 5;
+        }
+    }
+
+    return 1;
 }
 
 ?>

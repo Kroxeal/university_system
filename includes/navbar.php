@@ -141,15 +141,15 @@
             </div>
 
             <div class="modal-body">
-                <form id="registerForm" method="POST" action="../register.php">
+                <form id="registerFormm" method="POST" action="/university_course_project/register.php">
                     <div class="form-group">
-                        <label for="username">Username</label>
-                        <input type="text" class="form-control" id="username" name="username" maxlength="50" required>
+                        <label for="username_da">Username</label>
+                        <input type="text" class="form-control" id="username_da" name="username_da" maxlength="50" required>
                         <small id="usernameHelp" class="form-text text-danger" style="display: none;">Username already exists</small>
                     </div>
                     <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" maxlength="50" required>
+                        <label for="password_da">Password</label>
+                        <input type="password" class="form-control" id="password_da" name="password_da" maxlength="50" required>
                     </div>
                     <div class="form-group">
                         <label for="confirm_password">Confirm Password</label>
@@ -165,21 +165,22 @@
 </div>
 
 <script>
-    document.getElementById('registerForm').addEventListener('submit', function(event) {
+    document.getElementById('registerFormm').addEventListener('submit', function(event) {
         event.preventDefault();
-        var registerForm = document.getElementById('registerForm');
+        var registerForm = document.getElementById('registerFormm');
+        console.log(registerForm)
 
-        var username = document.getElementById('username').value;
-        var password = document.getElementById('password').value;
+        var username = document.getElementById('username_da').value;
+        var password = document.getElementById('password_da').value;
         var confirmPassword = document.getElementById('confirm_password').value;
 
         var passwordHelp = document.getElementById('passwordHelp');
         var usernameHelp = document.getElementById('usernameHelp');
         var errorMessage = document.getElementById('errorMessageSignUp');
-        // console.log(username)
-        // console.log(password)
-        // console.log(confirmPassword)
-        // console.log(registerForm)
+        console.log(username)
+        console.log(password)
+        console.log(confirmPassword)
+        console.log(registerForm)
 
 
         passwordHelp.style.display = 'none';
@@ -192,10 +193,13 @@
             return;
         }
 
-        var formData = new FormData(registerForm);
-        // console.log(formData)
+        const formData = new FormData(registerForm);
+        for (let [key, value] of formData.entries()) {
+            console.log(`${key}: ${value}`);
+        }
 
-        fetch('../register.php', {
+
+        fetch('/university_course_project/register.php', {
             method: 'POST',
             body: formData
         })
@@ -232,7 +236,7 @@
 
             const formData = new FormData(loginForm);
 
-            fetch('../login.php', {
+            fetch('/university_course_project/login.php', {
                 method: 'POST',
                 body: formData
             })

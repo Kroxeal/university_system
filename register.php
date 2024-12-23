@@ -2,8 +2,8 @@
 ob_start();
 include 'includes/db.php';
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
+    $username = $_POST['username_da'];
+    $password = $_POST['password_da'];
 
     if (strlen($username) < 3 || strlen($username) > 20 || !preg_match("/^[a-zA-Z0-9]+$/", $username)) {
         echo json_encode(['success' => false, 'error' => 'Username must be 3-20 characters long and contain only letters and numbers.']);
