@@ -94,6 +94,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <p>Your role: <strong><?php echo htmlspecialchars($user['role']); ?></strong></p>
         </div>
     </div>
+    <div class="container mt-4">
+        <!-- Upload Image Form -->
+        <h2 class="mt-4">Upload Photo:</h2>
+        <form id="upload-form" method="POST">
+            <div class="form-group">
+                <label for="image">Select Image:</label>
+                <input type="file" class="form-control" id="image" name="image" required>
+            </div>
+            <button type="submit" class="btn btn-success">Upload Photo</button>
+        </form>
+
+        <h2 class="mt-4">Delete Photo:</h2>
+        <button id="delete-image" class="btn btn-danger">Delete Photo</button>
+
+        <!-- Image Preview -->
+        <div id="image-preview" class="mt-4">
+            <p>Image size: <?php echo strlen($user['image']); ?> bytes</p>
+
+            <?php if (!empty($user['image'])): ?>
+                <img src="data:image/jpeg;base64,<?php echo base64_encode($user['image']); ?>" alt="User Photo" class="img-thumbnail" width="150">
+            <?php else: ?>
+                <p>No photo uploaded.</p>
+            <?php endif; ?>
+        </div>
+    </div>
 
     <h2 class="mt-4">Set Weights for Meeting Rankings:</h2>
     <form method="POST">
@@ -188,6 +213,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 },
                 error: function () {
                     alert('Failed to connect to the server.');
+                }
+            });
+        }
+    });
+</script>
+<script>
+    $('#upload-form').on('submit', function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+
+        // const fileInput = document.getElementById('image');
+        // formData.append('image', fileInput.files[0]);
+
+        console.log(formData.get("image"))
+
+        $.ajax({
+            url: 'upload_image.php',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (response) {
+                const data = JSON.parse(response);
+                if (data.success) {
+                    alert(data.success);
+                    location.reload();
+                } else {
+                    alert(data.error);
+                }
+            },
+            error: function () {
+                alert('Error uploading image');
+            }
+        });
+    });
+
+    $('#delete-image').on('click', function () {
+        if (confirm('Are you sure you want to delete the photo?')) {
+            $.ajax({
+                url: 'delete_image.php',
+                type: 'POST',
+                success: function (response) {
+                    const data = JSON.parse(response);
+                    if (data.success) {
+                        alert(data.success);
+                        location.reload();
+                    } else {
+                        alert(data.error);
+                    }
+                },
+                error: function () {
+                    alert('Error deleting image');
                 }
             });
         }

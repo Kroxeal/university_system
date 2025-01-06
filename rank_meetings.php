@@ -1,56 +1,5 @@
 <?php
 
-function rank_meetings($meetings, $user_id, $conn) {
-    $stmt = $conn->prepare('SELECT * FROM user_index_weights WHERE user_id = ?');
-    $stmt->bind_param('i', $user_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $weights = $result->fetch_assoc();
-    $stmt->close();
-
-    if (!$weights) {
-        $weights = [
-            'author_weight' => 0,
-            'date_weight' => 0,
-            'popularity_weight' => 0,
-            'subject_weight' => 0
-        ];
-    }
-
-    $subject_ids = get_user_subject_ids($user_id, $conn);
-
-    $ranked_meetings = [];
-
-    foreach ($meetings as $meeting) {
-        $author_score = get_author_score($meeting['ID'], $user_id, $conn);
-        $date_score = get_date_score($meeting['start_time']);
-        $popularity_score = get_popularity_score($meeting['ID'], $conn);
-        $subject_score = get_subject_score($meeting['ID'], $user_id, $conn);
-
-        $is_subject_relevant = isset($meeting['subject_id']) && in_array($meeting['subject_id'], $subject_ids) ? 1 : 0;
-
-        $total_score = ($author_score * $weights['author_weight']) +
-            ($date_score * $weights['date_weight']) +
-            ($popularity_score * $weights['popularity_weight']) +
-            ($subject_score * $weights['subject_weight']);
-
-        $ranked_meetings[] = [
-            'meeting' => $meeting,
-            'total_score' => $total_score,
-            'is_subject_relevant' => $is_subject_relevant
-        ];
-    }
-
-    usort($ranked_meetings, function ($a, $b) {
-        if ($a['is_subject_relevant'] != $b['is_subject_relevant']) {
-            return $b['is_subject_relevant'] - $a['is_subject_relevant'];
-        }
-        return $b['total_score'] - $a['total_score'];
-    });
-
-    return $ranked_meetings;
-}
-
 function get_user_subject_ids($user_id, $conn) {
     $stmt = $conn->prepare('
         SELECT DISTINCT ms.subject_id
@@ -69,6 +18,62 @@ function get_user_subject_ids($user_id, $conn) {
     $stmt->close();
 
     return $subject_ids;
+}
+
+function get_meeting_scores($meeting_id, $user_id, $conn, $subject_ids) {
+    $author_score = get_author_score($meeting_id, $user_id, $conn);
+    $date_score = get_date_score($meeting_id);
+    $popularity_score = get_popularity_score($meeting_id, $conn);
+    $subject_score = get_subject_score($meeting_id, $subject_ids, $conn);
+
+    return [
+        'author_score' => $author_score,
+        'date_score' => $date_score,
+        'popularity_score' => $popularity_score,
+        'subject_score' => $subject_score
+    ];
+}
+
+function rank_meetings($meetings, $user_id, $conn) {
+    $subject_ids = get_user_subject_ids($user_id, $conn);
+
+    $stmt = $conn->prepare('SELECT * FROM user_index_weights WHERE user_id = ?');
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $weights = $result->fetch_assoc();
+    $stmt->close();
+
+    if (!$weights) {
+        $weights = [
+            'author_weight' => 0,
+            'date_weight' => 0,
+            'popularity_weight' => 0,
+            'subject_weight' => 0
+        ];
+    }
+
+    $ranked_meetings = [];
+
+    foreach ($meetings as $meeting) {
+        $scores = get_meeting_scores($meeting['ID'], $user_id, $conn, $subject_ids);
+
+        $total_score = ($scores['author_score'] * $weights['author_weight']) +
+            ($scores['date_score'] * $weights['date_weight']) +
+            ($scores['popularity_score'] * $weights['popularity_weight']) +
+            ($scores['subject_score'] * $weights['subject_weight']);
+
+        $ranked_meetings[] = [
+            'meeting' => $meeting,
+            'total_score' => $total_score
+        ];
+    }
+
+    usort($ranked_meetings, function ($a, $b) {
+        return $b['total_score'] - $a['total_score'];
+    });
+
+    return $ranked_meetings;
 }
 
 function get_author_score($meeting_id, $user_id, $conn) {
@@ -128,34 +133,29 @@ function get_popularity_score($meeting_id, $conn) {
     return min($popularity_score, 10);
 }
 
-function get_subject_score($meeting_id, $user_id, $conn) {
-    $subject_ids = get_user_subject_ids($user_id, $conn);
-
-    if (empty($subject_ids)) {
-        return 0;
-    }
-
+function get_subject_score($meeting_id, $subject_ids, $conn) {
     $stmt = $conn->prepare('
         SELECT ms.subject_id
         FROM meeting_subjects ms
-        JOIN meetings m ON ms.meeting_id = m.ID
-        WHERE m.ID = ?');
+        WHERE ms.meeting_id = ?');
     $stmt->bind_param('i', $meeting_id);
     $stmt->execute();
     $result = $stmt->get_result();
-    $meeting_subjects = [];
+
+    $meeting_subject_ids = [];
     while ($row = $result->fetch_assoc()) {
-        $meeting_subjects[] = $row['subject_id'];
+        $meeting_subject_ids[] = $row['subject_id'];
     }
     $stmt->close();
 
-    foreach ($meeting_subjects as $subject_id) {
+    foreach ($meeting_subject_ids as $subject_id) {
         if (in_array($subject_id, $subject_ids)) {
-            return 5;
+            return 10;
         }
     }
 
-    return 1;
+    return 0;
 }
+
 
 ?>
