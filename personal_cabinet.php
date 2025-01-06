@@ -219,26 +219,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     });
 </script>
 <script>
+    $('#image').on('change', function () {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const base64Image = e.target.result;
+                sessionStorage.setItem('uploadedImage', base64Image);
+                console.log('Image saved to sessionStorage');
+            };
+            reader.readAsDataURL(file);
+        } else {
+            alert('No file selected');
+        }
+    });
+
     $('#upload-form').on('submit', function (e) {
         e.preventDefault();
 
-        const formData = new FormData(this);
+        const base64Image = sessionStorage.getItem('uploadedImage');
 
-        // const fileInput = document.getElementById('image');
-        // formData.append('image', fileInput.files[0]);
-
-        console.log(formData.get("image"))
+        if (!base64Image) {
+            alert('No image in sessionStorage. Please select an image.');
+            return;
+        }
 
         $.ajax({
             url: 'upload_image.php',
             type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
+            data: JSON.stringify({ image: base64Image }),
+            contentType: 'application/json',
             success: function (response) {
                 const data = JSON.parse(response);
                 if (data.success) {
                     alert(data.success);
+                    sessionStorage.removeItem('uploadedImage');
                     location.reload();
                 } else {
                     alert(data.error);
@@ -270,6 +285,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
         }
     });
+
 </script>
 </body>
 </html>

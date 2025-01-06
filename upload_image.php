@@ -2,33 +2,48 @@
 session_start();
 include('includes/db.php');
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['image'])) {
-    $image = $_FILES['image']['tmp_name'];
-    $image_data = file_get_contents($image);
-    $user_id = $_SESSION['user_id'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $data = json_decode(file_get_contents('php://input'), true);
 
-    error_log("Type of image: " . gettype($image_data));
-    error_log("Size of image: " . strlen($image_data) . " байт");
-    $query = "UPDATE users SET image = ? WHERE ID = ?";
-    $stmt = $conn->prepare($query);
+    if (isset($data['image'])) {
+        $base64_image = $data['image'];
 
-    if ($stmt === false) {
-        error_log("Error of query: " . $conn->error);
-        echo json_encode(['error' => 'Error of query']);
-        exit;
-    }
+        $image_data = base64_decode(preg_replace(
+            '#^data:image/\w+;base64,#i',
+            '', $base64_image)
+        );
 
-    $stmt->bind_param("si", $image_data, $user_id);
+        if ($image_data === false) {
+            echo json_encode(['error' => 'Invalid image data']);
+            exit;
+        }
 
-    if ($stmt->execute()) {
-        echo json_encode(['success' => 'Image successfully uploaded']);
+        $user_id = $_SESSION['user_id'];
+
+        $query = "UPDATE users SET image = ? WHERE ID = ?";
+        $stmt = $conn->prepare($query);
+
+        if ($stmt === false) {
+            error_log("Error preparing query: " . $conn->error);
+            echo json_encode(['error' => 'Error preparing query']);
+            exit;
+        }
+
+        $stmt->bind_param("si", $image_data, $user_id);
+
+        // Выполняем запрос
+        if ($stmt->execute()) {
+            echo json_encode(['success' => 'Image successfully uploaded']);
+        } else {
+            error_log("Error uploading image: " . $stmt->error);
+            echo json_encode(['error' => 'Error uploading image: ' . $stmt->error]);
+        }
+
+        $stmt->close();
     } else {
-        error_log("Error uploading image: " . $stmt->error);
-        echo json_encode(['error' => 'Error uploading image: ' . $stmt->error]);
+        echo json_encode(['error' => "No image data provided"]);
     }
-
-    $stmt->close();
 } else {
-    echo json_encode(['error' => "There's no image to upload"]);
+    echo json_encode(['error' => "Invalid request method"]);
 }
 ?>
