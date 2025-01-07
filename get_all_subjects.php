@@ -35,6 +35,7 @@ $stmt->close();
             <th>ID</th>
             <th>Title</th>
             <th>Actions</th>
+            <th>Manage Images</th>
         </tr>
         </thead>
         <tbody>
@@ -45,6 +46,9 @@ $stmt->close();
                 <td>
                     <a href="edit_subject.php?id=<?= $subject['ID'] ?>" class="btn btn-warning btn-sm">Edit</a>
                     <a href="delete_subject.php?id=<?= $subject['ID'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
+                </td>
+                <td>
+                    <a href="manage_subject_images.php?subject_id=<?= $subject['ID'] ?>" class="btn btn-info btn-sm">Manage Images</a>
                 </td>
             </tr>
         <?php } ?>

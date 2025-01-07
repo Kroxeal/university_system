@@ -95,12 +95,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
     <div class="container mt-4">
-        <!-- Upload Image Form -->
         <h2 class="mt-4">Upload Photo:</h2>
         <form id="upload-form" method="POST">
             <div class="form-group">
                 <label for="image">Select Image:</label>
-                <input type="file" class="form-control" id="image" name="image" required>
+                <input type="file" class="form-control" id="image" name="image" accept=".png, .jpg, .jpeg" required>
             </div>
             <button type="submit" class="btn btn-success">Upload Photo</button>
         </form>
@@ -108,7 +107,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <h2 class="mt-4">Delete Photo:</h2>
         <button id="delete-image" class="btn btn-danger">Delete Photo</button>
 
-        <!-- Image Preview -->
         <div id="image-preview" class="mt-4">
             <p>Image size: <?php echo strlen($user['image']); ?> bytes</p>
 
