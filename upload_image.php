@@ -26,6 +26,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
+        try {
+            $temp_image_path = tempnam(sys_get_temp_dir(), 'img');
+            if (file_put_contents($temp_image_path, $image_data) === false) {
+                throw new Exception('Failed to save temporary image');
+            }
+
+            if (!@getimagesize($temp_image_path)) {
+                unlink($temp_image_path);
+                throw new Exception('Image is corrupted or invalid');
+            }
+
+            if (!@imagecreatefromstring(file_get_contents($temp_image_path))) {
+                unlink($temp_image_path);
+                throw new Exception('Failed to create image from string');
+            }
+
+            // Удаляем временный файл
+            unlink($temp_image_path);
+        } catch (Exception $e) {
+            // Обрабатываем исключение
+            if (isset($temp_image_path) && file_exists($temp_image_path)) {
+                unlink($temp_image_path);
+            }
+            echo json_encode(['error' => $e->getMessage()]);
+            exit;
+        }
+
         $image_info = getimagesizefromstring($image_data);
         if ($image_info === false) {
             echo json_encode(['error' => 'The file is not a valid image']);
@@ -37,6 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['error' => 'Unsupported image type. Allowed types: JPEG, PNG, JPG']);
             exit;
         }
+
 
         $user_id = $_SESSION['user_id'] ?? null;
         if (!$user_id) {
